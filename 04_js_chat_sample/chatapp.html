@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>chatApp</title>
+  <style>
+    #output li {
+      background: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>realtime chat</h1>
+  <!-- 入力場所を作成しよう -->
+  <form>
+    <fieldset>
+      <legend>チャット入力画面</legend>
+      <div>
+        name: <input type="text" id="name">
+      </div>
+      <div>
+        text: <input type="text" id="text">
+      </div>
+      <div>
+        <button type="button" id="send">send</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <!-- データ出力場所 -->
+  <ul id="output"></ul>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script>
+    // 日時をいい感じの形式にする関数
+    function convertTimestampToDatetime(timestamp) {
+      const _d = timestamp ? new Date(timestamp * 1000) : new Date();
+      const Y = _d.getFullYear();
+      const m = (_d.getMonth() + 1).toString().padStart(2, '0');
+      const d = _d.getDate().toString().padStart(2, '0');
+      const H = _d.getHours().toString().padStart(2, '0');
+      const i = _d.getMinutes().toString().padStart(2, '0');
+      const s = _d.getSeconds().toString().padStart(2, '0');
+      return `${Y}/${m}/${d} ${H}:${i}:${s}`;
+    }
+  </script>
+  <!-- 以下にfirebaseのコードを貼り付けよう -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // 🔽 追加 / `9.2.0`の部分を↑のFirestoreから貼り付けたコードのバージョンに合わせる
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp,
+      onSnapshot,
+      query,
+      orderBy,
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8-IcL_Qaqzc6JrNW1MvoUeoC8pqgfJeE",
+      authDomain: "chat-test09.firebaseapp.com",
+      projectId: "chat-test09",
+      storageBucket: "chat-test09.appspot.com",
+      messagingSenderId: "401556589429",
+      appId: "1:401556589429:web:89b69d0abcbd3a93a1a13c",
+      measurementId: "G-FZ18Q66LRT"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    //データを送信するときの処理
+    $("#send").on("click", function () {
+      console.log($("#name").val())
+      const postData = {
+        name: $("#name").val(),
+        text: $("#text").val(),
+        time: serverTimestamp(),
+      };
+      addDoc(collection(db, "chat"), postData);
+      $("#text").val("");
+    });
+
+    function convertTimestampToDatetime(timestamp) {
+      const _d = timestamp ? new Date(timestamp * 1000) : new Date();
+      const Y = _d.getFullYear();
+      const m = (_d.getMonth() + 1).toString().padStart(2, "0");
+      const d = _d.getDate().toString().padStart(2, "0");
+      const H = _d.getHours().toString().padStart(2, "0");
+      const i = _d.getMinutes().toString().padStart(2, "0");
+      const s = _d.getSeconds().toString().padStart(2, "0");
+      return `${Y}/${m}/${d} ${H}:${i}:${s}`;
+    }
+
+    // データ取得処理
+    //onSnapshot(collection(db, "chat"), (querySnapshot) => {
+    //console.log(querySnapshot.docs);
+    //});
+
+    const q = query(collection(db, "chat"), orderBy("time", "desc"));
+
+    onSnapshot(q, (querySnapshot) => {
+      const documents = [];
+      querySnapshot.docs.forEach(function (doc) {
+        const document = {
+          id: doc.id,
+          data: doc.data(),
+        };
+        documents.push(document);
+      });
+      console.log(documents);
+      const htmlElements = [];
+      documents.forEach(function (document) {
+        htmlElements.push(`
+    <li id="${document.id}">
+      <p>${document.data.name
+          } at ${convertTimestampToDatetime(document.data.time.seconds)}</p>
+      <p>${document.data.text}</p>
+    </li>
+  `);
+      });
+
+      $("#output").html(htmlElements);
+    });
+
+
+    //ここまでは毎回同じ
+
+
+
+    $("#text").on("keydown", function (e) {
+      if (e.keyCode === 13) {
+        const postData = {
+          name: $("#name").val(),
+          text: $("#text").val(),
+          time: serverTimestamp(),
+        };
+        addDoc(collection(db, "chat"), postData);
+        $("#text").val("");
+      }
+    });
+
+
+  </script>
+
+
+</body>
+
+</html>
