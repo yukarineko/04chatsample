@@ -7,6 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>授業申し込みフォーム</title>
     <link rel="stylesheet" href="css/company.css">
+    <style>
+        #output li {
+            background: #ccc;
+        }
+    </style>
 </head>
 
 <body>
@@ -20,7 +25,7 @@
     <main class="contact">
         <div class="form-wrapper">
             <h2 class="contact_title text-center">企業用授業お申込みフォーム</h2>
-            <form action="" method="post">
+            <form acction="" method="post">
                 <dl class="form-inner">
                     <p id="error_message" class="error-message"></p>
                     <dt class="form-title">会社名・団体名</dt>
@@ -36,7 +41,7 @@
                     <dt class="form-title">希望学年</dt>
                     <dd class="form-item">
                         <div class="select-wrapper">
-                            <select name="grade" id="grade" class="form-parts">
+                            <select input type="text" name="grade" id="grade" class="form-parts">
                                 <option value="">選択してください</option>
                                 <option value="低学年">低学年</option>
                                 <option value="中学年">中学年</option>
@@ -48,7 +53,7 @@
                     <dt class="form-title">提供授業</dt>
                     <dd class="form-item">
                         <div class="select-wrapper">
-                            <select name="teach" id="teach" class="form-parts">
+                            <select input type="text" name="teach" id="teach" class="form-parts">
                                 <option value="">選択してください</option>
                                 <option value="SDGs教育（環境）">SDGs教育（環境）</ption>
                                 <option value="キャリア教育">キャリア教育</option>
@@ -63,7 +68,8 @@
                         </div>
                     </dd>
                     <dt class="form-title">授業内容</dt>
-                    <dd class="form-item"><textarea id="text_area" placeholder="授業内容をくわしく入力してください"></textarea></dd>
+                    <dd class="form-item"><input type="text" textarea id="text_area"
+                            placeholder="授業内容をくわしく入力してください"></textarea></dd>
                     <dt class="form-title check-radio">授業形態</dt>
                     <dd class="form-item">
                         <label for="delivery" class="form-label"><input type="radio" name="kind" id="delivery"
@@ -83,7 +89,7 @@
                                 value="不可能">不可能</label>
                     </dd>
                     <dt class="form-title">その他</dt>
-                    <dd class="form-item"><textarea name="detail" id="text_area2"
+                    <dd class="form-item"><input type="text" textarea name="detail" id="text_area2"
                             placeholder="お問い合わせ内容があれば入力してください"></textarea></dd>
                 </dl>
                 <input type="submit" value="送信" class="btn btn-submit" id="save">
@@ -95,60 +101,119 @@
         <small>School Pipette</small>
     </footer>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- データ出力場所 -->
+    <ul id="output"></ul>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script type="module">
-
+        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
         import {
             getFirestore,
             collection,
             addDoc,
             serverTimestamp,
+            onSnapshot,
+            query,
+            orderBy,
         } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
+
+        // Git Hubにあげる時にはあげない
         const firebaseConfig = {
-            apiKey: "AIzaSyCr29s0HoO5iBJHUqYCaKlc6AFR1tVhvWQ",
-            authDomain: "form-memo-eec7f.firebaseapp.com",
-            projectId: "form-memo-eec7f",
-            storageBucket: "form-memo-eec7f.appspot.com",
-            messagingSenderId: "38195876283",
-            appId: "1:38195876283:web:c9b59585930df491c0749e"
+            apiKey:
+                authDomain: "form-memo03.firebaseapp.com",
+            projectId: "form-memo03",
+            storageBucket: "form-memo03.appspot.com",
+            messagingSenderId:
+                appId:
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         //データを送信するときの処理
-        $("#save").on("click", function () {
+        $("#save").on("click", function (e) {
+            e.preventDefault(); // フォームのデフォルトの送信動作をキャンセル
             const postData = {
-                companyname: $("#company_name").val(),
-                place: $("#location").val(),
+                company_name: $("#company_name").val(),
+                location: $("#location").val(),
                 email: $("#email").val(),
                 grade: $("#grade").val(),
                 teach: $("#teach").val(),
-                text1: $("#text_area").val(),
-                //delivery: $("input[name='kind']:checked").val(),
-                //career: $("input[name='kind2']:checked").val(),
-                text2: $("#text_area2").val(),
-                time: serverTimestamp(),
+                text_area: $("#text_area").val(),
+                delivery: $("input[name='kind']:checked").val(),
+                career: $("input[name='kind2']:checked").val(),
+                text_area2: $("#text_area2").val(),
             };
-            //addDoc(collection(db, "form"), postData);
-            //$("#text").val("");
+            addDoc(collection(db, "form"), postData);
+            $("#text").val("");
+            $("#radio").val("");
+        });
 
-        })
-        db.collection("form").add(postData)
-            .then(function (docRef) {
-                console.log("Document written with ID: ", docRef.id);
-                $("#company_name").val("");
-                $("#location").val("");
-                $("#email").val("");
-                $("#grade").val("");
-                $("#teach").val("");
-                $("#text_area").val("");
-                //$("input[name='kind']").prop("checked", false);
-                //$("input[name='kind2']").prop("checked", false);
-                $("#text_area2").val("");
-            })
+        //日時をいい感じの形式にする関数
+        function convertTimestampToDatetime(timestamp) {
+            const _d = timestamp ? new Date(timestamp * 1000) : new Date();
+            const Y = _d.getFullYear();
+            const m = (_d.getMonth() + 1).toString().padStart(2, "0");
+            const d = _d.getDate().toString().padStart(2, "0");
+            const H = _d.getHours().toString().padStart(2, "0");
+            const i = _d.getMinutes().toString().padStart(2, "0");
+            const s = _d.getSeconds().toString().padStart(2, "0");
+            return `${Y}/${m}/${d} ${H}:${i}:${s}`;
+        }
+
+        // データ取得処理
+        const q = query(collection(db, "form"), orderBy("time", "desc"));
+
+        onSnapshot(q, (querySnapshot) => {
+            const documents = [];
+            querySnapshot.docs.forEach(function (doc) {
+                const document = {
+                    id: doc.id,
+                    data: doc.data(),
+                };
+                documents.push(document);
+            });
+            console.log(documents);
+            const htmlElements = [];
+            documents.forEach(function (document) {
+                htmlElements.push(`
+    <li id="${document.id}">
+      <p>${document.data.name
+                    } at ${convertTimestampToDatetime(document.data.time.seconds)}</p>
+      <p>${document.data.text}</p>
+    </li>
+  `);
+            });
+
+            $("#text", "#radio").on("keydown", function (e) {
+                if (e.keyCode === 13) {
+                    const postData = {
+                        company_name: $("#company_name").val(),
+                        location: $("#location").val(),
+                        email: $("#email").val(),
+                        grade: $("#grade").val(),
+                        teach: $("#teach").val(),
+                        text_area: $("#text_area").val(),
+                        delivery: $("input[name='kind']:checked").val(),
+                        career: $("input[name='kind2']:checked").val(),
+                        text_area2: $("#text_area2").val(),
+                        time: serverTimestamp(),
+                    };
+                    addDoc(collection(db, "form"), postData);
+                    $("#text").val("");
+                    $("#radio").val("");
+                }
+            });
+
+            $("#output").html(htmlElements);
+        });
+
     </script>
 </body>
+
+</html>

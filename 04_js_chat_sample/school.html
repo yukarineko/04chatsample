@@ -7,6 +7,11 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>授業申し込みフォーム</title>
     <link rel="stylesheet" href="css/school.css">
+    <style>
+        #output li {
+            background: #ccc;
+        }
+    </style>
 </head>
 
 <body>
@@ -36,7 +41,7 @@
                     <dt class="form-title">学年</dt>
                     <dd class="form-item">
                         <div class="select-wrapper">
-                            <select name="grade" id="grade" class="form-parts">
+                            <select input type="text" name="grade" id="grade" class="form-parts">
                                 <option value="">選択してください</option>
                                 <option value="低学年">低学年</option>
                                 <option value="中学年">中学年</option>
@@ -48,7 +53,7 @@
                     <dt class="form-title">希望する授業</dt>
                     <dd class="form-item">
                         <div class="select-wrapper">
-                            <select name="teach" id="teach" class="form-parts">
+                            <select input type="text" name="teach" id="teach" class="form-parts">
                                 <option value="">選択してください</option>
                                 <option value="SDGs教育（環境）">SDGs教育（環境）</ption>
                                 <option value="キャリア教育">キャリア教育</option>
@@ -83,7 +88,7 @@
                                 value="全校">全校</label>
                     </dd>
                     <dt class="form-title">その他</dt>
-                    <dd class="form-item"><textarea name="detail" id="text_area2"
+                    <dd class="form-item"><input type="text" textarea name="detail" id="text_area2"
                             placeholder="お問い合わせ内容があれば入力してください"></textarea></dd>
                 </dl>
                 <input type="submit" value="送信" class="btn btn-submit" id="save">
@@ -95,147 +100,58 @@
         <small>School Pipette</small>
     </footer>
 
+    <!-- データ出力場所 -->
+    <ul id="output"></ul>
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script>
 
-        $(document).ready(function () {
-            //配列を準備
-            const history = [];
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            serverTimestamp,
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-            //データを保存する
-            $("#save").on("click", function (event) {
-                event.preventDefault();
 
-                // 必須項目のチェック
-                const schoolName = $("#school_name").val();
-                const location = $("#location").val();
-                const email = $("#email").val();
-                const grade = $("#grade").val(); // 学年
-                const teach = $("#teach").val(); // 希望する授業
-                const textArea = $("#text_area").val();
-                const lessonType = $("input[name='kind']:checked").val();
-                const careerLesson = $("input[name='kind2']:checked").val();
+        // Git Hubにあげる時にはあげない
+        const firebaseConfig = {
+            apiKey:
+                authDomain: "form-memo03.firebaseapp.com",
+            projectId: "form-memo03",
+            storageBucket: "form-memo03.appspot.com",
+            messagingSenderId:
+                appId:
+        };
 
-                // 未入力項目のチェックとメッセージ表示
-                const errorMessage = $("#error_message");
-                if (!schoolName || !location || !email || !grade || !teach || !textArea || !lessonType || !careerLesson) {
-                    errorMessage.text("未入力の項目があります。すべての項目を入力してください。");
-                    errorMessage.addClass("show-error");//エラーメッセージのスタイルを変更するためのクラスを追加
-                    errorMessage[0].scrollIntoView({ behavior: "smooth", block: "center" });//スクロール位置を中央に配置
-                    return;
-                } else {
-                    errorMessage.text(""); // エラーメッセージをクリアする
-                    errorMessage.removeClass("show-error");//エラーメッセージのスタイルをリセット
-                }
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-                //学校名
-                const text = $("#school_name").val();
-                console.log(text);
-                const data = { schoolName: text };
-
-                //住所
-                const text2 = $("#location").val();
-                console.log(text2);
-                const data2 = { locationName: text2 };
-
-                //メールアドレス
-                const text3 = $("#email").val();
-                console.log(text3);
-                const data3 = { emailName: text3 };
-
-                //学年
-                const text4 = $("#grade").val();
-                console.log(text4);
-                const data4 = { gradeName: text4 };
-
-                //希望する授業
-                const text5 = $("#teach").val();
-                console.log(text5);
-                const data5 = { teachName: text5 };
-
-                //授業内容
-                const text6 = $("#text_area").val();
-                console.log(text6);
-                const data6 = { textArea: text6 };
-
-                //授業形態
-                const text7 = $("input[name='lessonType']:checked").val();
-                console.log(text7);
-                const data7 = { lessonType: text7 };
-                //const text7 = $("input[name='kind']:checked").val();
-                //console.log(text7);
-                //const data7 = { lessonType: text7 };
-
-                //規模
-                const text8 = $("input[name='careerLesson']:checked").val();
-                console.log(text8);
-                const data8 = { careerLesson: text8 };
-                //const text8 = $("input[name='kind2']:checked").val();
-                //console.log(text8);
-                //const data8 = { careerLesson: text8 };
-
-                //問い合わせ
-                const text9 = $("#text_area2").val();
-                console.log(text9);
-                const data9 = { textArea2: text9 };
-
-                // data1～9を1つのオブジェクトにまとめる
-                //const formData = {
-                //schoolName: text,
-                //locationName: text2,
-                //emailName: text3,
-                //gradeName: text4,
-                //teachName: text5,
-                //textArea: text6,
-                //lessonType: text7,
-                //careerLesson: text8,
-                //textArea2: text9,
-                //};
-
-                // data1～9を1つのオブジェクトにまとめる
-                const formData = [
-                    { key: "schoolName", value: text },
-                    { key: "locationName", value: text2 },
-                    { key: "emailName", value: text3 },
-                    { key: "gradeName", value: text4 },
-                    { key: "teachName", value: text5 },
-                    { key: "textArea", value: text6 },
-                    { key: "lessonType", value: text7 },
-                    { key: "careerLesson", value: text8 },
-                    { key: "textArea2", value: text9 }
-                ];
-
-                // 配列にformDataを格納し、新しいものが最新にくるようにする
-                history.unshift(formData);
-
-                // 配列をローカルストレージに保存する
-                const json = JSON.stringify(history);
-                localStorage.setItem("memo1", json);
-                // フォームをクリアする
-                $("#school_name").val("");
-                $("#location").val("");
-                $("#email").val("");
-                $("#grade").val("");
-                $("#teach").val("");
-                $("#text_area").val("");
-                $("input[name='kind']").prop("checked", false);
-                $("input[name='kind2']").prop("checked", false);
-                $("#text_area2").val("");
-            });
-
-            // 削除ボタンの処理
-            $("#clear").on("click", function () {
-                localStorage.removeItem("memo1");
-                history.length = 0; // 配列もクリアする
-                $("#school_name").val("");
-                $("#location").val("");
-                $("#email").val("");
-                $("#grade").val("");
-                $("#teach").val("");
-                $("#text_area").val("");
-                $("input[name='kind']").prop("checked", false);
-                $("input[name='kind2']").prop("checked", false);
-                $("#text_area2").val("");
-            });
-        });
+        //データを送信するときの処理
+        $("#save").on("click", function (e) {
+            e.preventDefault(); // フォームのデフォルトの送信動作をキャンセル
+            const postData = {
+                school_name: $("#school_name").val(),
+                location: $("#location").val(),
+                email: $("#email").val(),
+                grade: $("#grade").val(),
+                teach: $("#teach").val(),
+                text_area: $("#text_area").val(),
+                delivery: $("input[name='kind']:checked").val(),
+                classroom: $("input[name='kind2']:checked").val(),
+                text_area2: $("#text_area2").val(),
+            };
+            addDoc(collection(db, "form2"), postData);
+        })
+        $("#text").val("");
+        $("#radio").val("");
     </script>
+
+</body>
+
+</html>
